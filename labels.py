@@ -1,6 +1,8 @@
+import random
 def generate_cloud_label(contour):
     import cv2
     import random
+
 
     x, y, w, h = cv2.boundingRect(contour)
     area = cv2.contourArea(contour)
@@ -30,3 +32,7 @@ def generate_cloud_label(contour):
         adjectives = ["Suspicious", "Uncertain", "Majestic", "Dramatic"]
         nouns = ["Samosa", "Potato", "Duck", "Blob"]
         return f"{random.choice(adjectives)} {random.choice(nouns)}"
+    
+def random_emotion():
+    emotions = ["happy", "sad", "angry", "sarcastic", "excited", "bored"]
+    return random.choice(emotions)
