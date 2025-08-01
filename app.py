@@ -1,54 +1,54 @@
 import streamlit as st
 import cv2
-import numpy as np
-from PIL import Image
-import tempfile
 from detector import detect_clouds
-from gemini_utils import generate_cloud_label
-from utils import convert_cv2_to_pil, encode_image_to_base64
 
-st.set_page_config(page_title="AI Cloud Labeler ☁️", page_icon="🌥️", layout="centered")
+st.set_page_config(page_title="CloudBooth ☁️", layout="wide")
+st.title("☁️ CloudBooth: The Sky’s Facial Recognition System")
 
-st.title("☁️ AI Cloud Labeler with Gemini")
-st.markdown("Upload a sky image or take a live capture to label cloud shapes creatively using Gemini 1.5 Flash!")
+video_file = st.file_uploader("Upload a sky video (or leave blank for webcam)", type=["mp4"])
 
-uploaded_image = st.file_uploader("Upload a sky image", type=["jpg", "jpeg", "png"])
-capture_button = st.button("Take Live Webcam Capture")
+run_app = st.button("Start Judging Clouds")
 
-image = None
+longest_cloud = {"label": "", "aspect_ratio": 0}
+explosive_cloud = {"label": "", "solidity": 1}
+biggest_cloud = {"label": "", "area": 0}
 
-# 1. Upload or capture an image
-if uploaded_image:
-    image = np.array(Image.open(uploaded_image).convert("RGB"))
-elif capture_button:
-    st.info("Initializing webcam...")
-    cap = cv2.VideoCapture(0)
-    ret, frame = cap.read()
+if run_app:
+    stframe = st.empty()
+    cap = cv2.VideoCapture(0 if video_file is None else video_file.name)
+
+    while cap.isOpened():
+        ret, frame = cap.read()
+        if not ret:
+            break
+
+        cloud_count, cloud_info, leaderboard_data = detect_clouds(frame)
+
+        for data in leaderboard_data:
+            if data["aspect_ratio"] > longest_cloud["aspect_ratio"]:
+                longest_cloud = {"label": data["label"], "aspect_ratio": data["aspect_ratio"]}
+            if data["solidity"] < explosive_cloud["solidity"]:
+                explosive_cloud = {"label": data["label"], "solidity": data["solidity"]}
+            if data["area"] > biggest_cloud["area"]:
+                biggest_cloud = {"label": data["label"], "area": data["area"]}
+
+        display = frame.copy()
+        for x, y, w, h, label, mood in cloud_info:
+            cv2.rectangle(display, (x, y), (x+w, y+h), (255,255,255), 2)
+            cv2.putText(display, f"{label} ({mood})", (x, y-10),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0,255,255), 2)
+        cv2.putText(display, f"Clouds: {cloud_count}", (20,30),
+                    cv2.FONT_HERSHEY_SIMPLEX, 1, (0,255,0), 2)
+        stframe.image(display, channels="BGR")
+
     cap.release()
 
-    if ret:
-        image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        st.success("Captured!")
-    else:
-        st.error("Failed to capture image.")
-
-if image is not None:
-    st.image(image, caption="Original Image", use_column_width=True)
-
-    # 2. Detect clouds in the image
-    st.subheader("⛅ Detected Clouds")
-    cropped_clouds, bboxes, _ = detect_clouds(image)
-
-    if not cropped_clouds:
-        st.warning("No cloud-like shapes detected.")
-    else:
-        for idx, crop in enumerate(cropped_clouds):
-            col1, col2 = st.columns([1, 2])
-
-            with col1:
-                st.image(crop, caption=f"Cloud #{idx+1}", use_column_width=True)
-
-            with col2:
-                with st.spinner("Labeling..."):
-                    label = generate_cloud_label(crop)
-                st.success(f"Label: {label}")
+# Sidebar Leaderboard
+with st.sidebar:
+    st.header("🏆 Cloud Leaderboard")
+    st.subheader("☁️ Longest Cloud")
+    st.markdown(f"**{longest_cloud['label']}** — AR: {longest_cloud['aspect_ratio']:.2f}")
+    st.subheader("💥 Most Explosive")
+    st.markdown(f"**{explosive_cloud['label']}** — Solidity: {explosive_cloud['solidity']:.2f}")
+    st.subheader("🍔 Biggest Cloud")
+    st.markdown(f"**{biggest_cloud['label']}** — Area: {biggest_cloud['area']:.0f}")
