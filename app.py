@@ -40,6 +40,10 @@ st.markdown("""
             background-color: rgba(255, 255, 255, 0.85);
             padding: 1rem;
             border-radius: 10px;
+            
+        [data-testid="stSidebar"] hr {
+    border: 1px solid black !important;
+}
         }
     </style>
 """, unsafe_allow_html=True)
@@ -47,13 +51,13 @@ st.markdown("""
 
 # --- Page Configuration ---
 st.set_page_config(page_title="CloudBooth ☁️", layout="wide")
-vibrant_style() # Apply our new style
+
 
 # --- Welcome section in the sidebar ---
 st.sidebar.title("Welcome, Cloud Slayer!")
 # --- CHANGE: Using a local image file ---
 # Make sure you have an image named 'sanemi.jpeg' in the same folder as this script.
-st.sidebar.image("sanemi.jpeg", caption="Sanemi Shinazugawa")
+
 st.sidebar.divider()
 
 
