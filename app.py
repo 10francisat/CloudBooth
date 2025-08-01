@@ -5,10 +5,10 @@ from PIL import Image
 import sys
 import os
 
-# This path modification assumes 'detector.py' is in the same directory.
+# This path modification 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from detector import detect_clouds
-# --- CHANGE: Import all character comment functions ---
+
 from gemini_helper import get_tanjiro_comment, get_zenitsu_comment, get_inosuke_comment
 
 # --- Page Configuration ---
@@ -61,7 +61,7 @@ st.sidebar.title("Welcome, Cloud Slayer!")
 st.sidebar.divider()
 
 
-st.title("☁️ CloudBooth: The Sky’s Image Analyzer")
+st.title("☁️ CloudBooth: The Sky’s Facial Recognition ")
 st.markdown("Upload a picture of the sky, and we'll identify the clouds and give them clever names.")
 
 # Upload File
