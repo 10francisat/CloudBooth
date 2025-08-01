@@ -1,77 +1,91 @@
 import streamlit as st
 import cv2
+import numpy as np
+from PIL import Image
+
+# We need to make sure the other helper files can be found
+# This handles potential import issues depending on how the app is run
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
 from detector import detect_clouds
-import tempfile
-import time
 
-
+# --- Page Configuration ---
 st.set_page_config(page_title="CloudBooth ☁️", layout="wide")
-st.title("☁️ CloudBooth: The Sky’s Facial Recognition System")
+st.title("☁️ CloudBooth: The Sky’s Image Analyzer")
+st.markdown("Upload a picture of the sky, and we'll identify the clouds and give them clever names.")
 
-video_file = st.file_uploader("Upload a sky video (or leave blank for webcam)", type=["mp4"])
+# --- File Uploader ---
+uploaded_file = st.file_uploader("Choose a sky picture...", type=["jpg", "jpeg", "png"])
 
-run_app = st.button("Start Judging Clouds")
+# --- Main App Logic ---
+if uploaded_file is None:
+    st.info("Please upload an image file to begin analysis.")
+else:
+    # This block runs only after a file has been uploaded
+    try:
+        # Read the uploaded file into an image that OpenCV can use
+        pil_image = Image.open(uploaded_file)
+        frame = np.array(pil_image.convert('RGB'))
+        # OpenCV uses BGR format, so we convert from RGB
+        frame_bgr = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
 
-longest_cloud = {"label": "", "aspect_ratio": 0}
-explosive_cloud = {"label": "", "solidity": 1}
-biggest_cloud = {"label": "", "area": 0}
-total_clouds_seen = 0  # ✅ New counter
+        # Use columns for a side-by-side layout
+        col1, col2 = st.columns(2)
 
-if run_app:
-    stframe = st.empty()
+        with col1:
+            st.header("Original Image")
+            st.image(pil_image, use_container_width=True)
 
-    if video_file is not None:
-        # Save uploaded file to a temporary file
-        tfile = tempfile.NamedTemporaryFile(delete=False)
-        tfile.write(video_file.read())
-        temp_path = tfile.name
-        cap = cv2.VideoCapture(temp_path)
-    else:
-        cap = cv2.VideoCapture(0)  # webcam
+        # --- Cloud Detection and Drawing ---
+        # Show a spinner while the analysis is running
+        with st.spinner('Analyzing clouds... This may take a moment.'):
+            # The 'total_clouds_seen' starts at 0 for each new image
+            total_clouds_seen, cloud_info, leaderboard_data = detect_clouds(frame_bgr, 0)
 
-    total_clouds_seen = 0
+        display_image = frame_bgr.copy()
 
-    while cap.isOpened():
-        ret, frame = cap.read()
-        if not ret:
-            break  # or optionally loop with cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+        # Loop through the detected clouds and draw their outlines and labels
+        for x, y, w, h, label, mood, contour in cloud_info:
+            # Draw the precise outline of the cloud in green
+            cv2.drawContours(display_image, [contour], -1, (0, 255, 0), 3)
+            # Put the generated label and mood above the cloud
+            cv2.putText(display_image, f"{label} ({mood})", (x, y - 15),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 255), 2)
 
-        total_clouds_seen, cloud_info, leaderboard_data = detect_clouds(frame, total_clouds_seen)
+        with col2:
+            st.header("Analyzed Image")
+            # Convert the color back to RGB for correct display in Streamlit
+            st.image(cv2.cvtColor(display_image, cv2.COLOR_BGR2RGB), use_container_width=True)
+        
+        # --- Add the emoji shower ---
+        st.balloons()
+        st.success("Analysis Complete!")
 
-        for data in leaderboard_data:
-            if data["aspect_ratio"] > longest_cloud["aspect_ratio"]:
-                longest_cloud = {"label": data["label"], "aspect_ratio": data["aspect_ratio"]}
-            if data["solidity"] < explosive_cloud["solidity"]:
-                explosive_cloud = {"label": data["label"], "solidity": data["solidity"]}
-            if data["area"] > biggest_cloud["area"]:
-                biggest_cloud = {"label": data["label"], "area": data["area"]}
+        # --- Sidebar for Cloud Statistics ---
+        st.sidebar.header("☁️ Cloud Stats for this Image")
+        if not leaderboard_data:
+            st.sidebar.info("No clouds were detected in this image.")
+        else:
+            # Sort clouds by area to find the biggest
+            biggest_cloud = max(leaderboard_data, key=lambda x: x['area'])
+            # Sort clouds by aspect ratio to find the longest
+            longest_cloud = max(leaderboard_data, key=lambda x: x['aspect_ratio'])
+            # Sort clouds by solidity to find the most "explosive"
+            explosive_cloud = min(leaderboard_data, key=lambda x: x['solidity'])
 
-        display = frame.copy()
-        for x, y, w, h, label, mood in cloud_info:
-            cv2.rectangle(display, (x, y), (x+w, y+h), (255,255,255), 2)
-            cv2.putText(display, f"{label} ({mood})", (x, y-10),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0,255,255), 2)
+            st.sidebar.subheader("🏆 Biggest Cloud")
+            st.sidebar.markdown(f"**{biggest_cloud['label']}** — Area: {biggest_cloud['area']:.0f} pixels")
+            
+            st.sidebar.subheader("📏 Longest Cloud")
+            st.sidebar.markdown(f"**{longest_cloud['label']}** — Aspect Ratio: {longest_cloud['aspect_ratio']:.2f}")
 
-        cv2.putText(display, f"Clouds: {len(cloud_info)}", (20,30),
-                    cv2.FONT_HERSHEY_SIMPLEX, 1, (0,255,0), 2)
-        cv2.putText(display, f"Total Clouds Seen: {total_clouds_seen}", (20, 65),
-                    cv2.FONT_HERSHEY_SIMPLEX, 1, (0,128,255), 2)
+            st.sidebar.subheader("💥 Most Explosive")
+            st.sidebar.markdown(f"**{explosive_cloud['label']}** — Solidity: {explosive_cloud['solidity']:.2f}")
 
-        # Display in Streamlit
-        stframe.image(display, channels="BGR")
+            st.sidebar.subheader("🔢 Total Clouds Found")
+            st.sidebar.markdown(f"**{len(leaderboard_data)}** clouds were identified.")
 
-        time.sleep(0.03)  # ⏱ control playback speed (adjust as needed)
-
-    cap.release()
-
-# ✅ Sidebar Leaderboard
-with st.sidebar:
-    st.header("🏆 Cloud Leaderboard")
-    st.subheader("☁️ Longest Cloud")
-    st.markdown(f"**{longest_cloud['label']}** — AR: {longest_cloud['aspect_ratio']:.2f}")
-    st.subheader("💥 Most Explosive")
-    st.markdown(f"**{explosive_cloud['label']}** — Solidity: {explosive_cloud['solidity']:.2f}")
-    st.subheader("🍔 Biggest Cloud")
-    st.markdown(f"**{biggest_cloud['label']}** — Area: {biggest_cloud['area']:.0f}")
-    st.subheader("🔢 Total Clouds Seen")
-    st.markdown(f"**{total_clouds_seen}** clouds observed")
+    except Exception as e:
+        st.error(f"An error occurred while processing the image: {e}")
