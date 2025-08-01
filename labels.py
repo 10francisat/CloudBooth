@@ -11,7 +11,7 @@ def generate_cloud_label(contour):
     hull = cv2.convexHull(contour)
     hull_area = cv2.contourArea(hull)
     solidity = area / hull_area if hull_area != 0 else 0
-
+# AR
     if aspect_ratio > 2.5:
         return "Long cloud"
     elif aspect_ratio < 0.4:

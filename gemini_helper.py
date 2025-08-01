@@ -8,7 +8,7 @@ import cv2
 # Load environment variables from a .env file
 load_dotenv()
 
-# --- Gemini API Configuration ---
+# Gemini API Configuration 
 try:
     api_key = st.secrets["GOOGLE_API_KEY"]
 except (FileNotFoundError, KeyError):
@@ -22,13 +22,16 @@ else:
     st.warning("GOOGLE_API_KEY not found. Please set it in your .env file or Streamlit secrets.")
 
 def get_gemini_analysis(cloud_image_np):
-    """
-    Uses the Gemini Vision model to analyze an image of a cloud.
-    """
+    
+    #Uses the Gemini Vision model to analyze an image of a cloud.
+    
     if model is None:
         return "[Gemini API key not configured]"
 
     pil_image = Image.fromarray(cv2.cvtColor(cloud_image_np, cv2.COLOR_BGR2RGB))
+
+    # Gemini PROMPT
+
     prompt = """
     You are a creative and imaginative cloud spotter, an expert in pareidolia.
     Look closely at the provided image of a single cloud.
