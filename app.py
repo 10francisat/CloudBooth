@@ -1,6 +1,9 @@
 import streamlit as st
 import cv2
 from detector import detect_clouds
+import tempfile
+import time
+
 
 st.set_page_config(page_title="CloudBooth ☁️", layout="wide")
 st.title("☁️ CloudBooth: The Sky’s Facial Recognition System")
@@ -12,17 +15,28 @@ run_app = st.button("Start Judging Clouds")
 longest_cloud = {"label": "", "aspect_ratio": 0}
 explosive_cloud = {"label": "", "solidity": 1}
 biggest_cloud = {"label": "", "area": 0}
+total_clouds_seen = 0  # ✅ New counter
 
 if run_app:
     stframe = st.empty()
-    cap = cv2.VideoCapture(0 if video_file is None else video_file.name)
+
+    if video_file is not None:
+        # Save uploaded file to a temporary file
+        tfile = tempfile.NamedTemporaryFile(delete=False)
+        tfile.write(video_file.read())
+        temp_path = tfile.name
+        cap = cv2.VideoCapture(temp_path)
+    else:
+        cap = cv2.VideoCapture(0)  # webcam
+
+    total_clouds_seen = 0
 
     while cap.isOpened():
         ret, frame = cap.read()
         if not ret:
-            break
+            break  # or optionally loop with cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
 
-        cloud_count, cloud_info, leaderboard_data = detect_clouds(frame)
+        total_clouds_seen, cloud_info, leaderboard_data = detect_clouds(frame, total_clouds_seen)
 
         for data in leaderboard_data:
             if data["aspect_ratio"] > longest_cloud["aspect_ratio"]:
@@ -37,13 +51,20 @@ if run_app:
             cv2.rectangle(display, (x, y), (x+w, y+h), (255,255,255), 2)
             cv2.putText(display, f"{label} ({mood})", (x, y-10),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0,255,255), 2)
-        cv2.putText(display, f"Clouds: {cloud_count}", (20,30),
+
+        cv2.putText(display, f"Clouds: {len(cloud_info)}", (20,30),
                     cv2.FONT_HERSHEY_SIMPLEX, 1, (0,255,0), 2)
+        cv2.putText(display, f"Total Clouds Seen: {total_clouds_seen}", (20, 65),
+                    cv2.FONT_HERSHEY_SIMPLEX, 1, (0,128,255), 2)
+
+        # Display in Streamlit
         stframe.image(display, channels="BGR")
+
+        time.sleep(0.03)  # ⏱ control playback speed (adjust as needed)
 
     cap.release()
 
-# Sidebar Leaderboard
+# ✅ Sidebar Leaderboard
 with st.sidebar:
     st.header("🏆 Cloud Leaderboard")
     st.subheader("☁️ Longest Cloud")
@@ -52,3 +73,5 @@ with st.sidebar:
     st.markdown(f"**{explosive_cloud['label']}** — Solidity: {explosive_cloud['solidity']:.2f}")
     st.subheader("🍔 Biggest Cloud")
     st.markdown(f"**{biggest_cloud['label']}** — Area: {biggest_cloud['area']:.0f}")
+    st.subheader("🔢 Total Clouds Seen")
+    st.markdown(f"**{total_clouds_seen}** clouds observed")
