@@ -7,6 +7,8 @@ import os
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from detector import detect_clouds
+# --- CHANGE: Import all character comment functions ---
+from gemini_helper import get_tanjiro_comment, get_zenitsu_comment, get_inosuke_comment
 
 # --- Custom CSS for the theme ---
 def vibrant_style():
@@ -53,18 +55,29 @@ def vibrant_style():
 
 # --- Page Configuration ---
 st.set_page_config(page_title="CloudBooth ☁️", layout="wide")
-vibrant_style() # Apply our new style
+vibrant_style() 
 
-# --- Welcome section in the sidebar ---
-st.sidebar.title("Welcome, Cloud Slayer!")
-# --- CHANGE: Using a local image file ---
-# Make sure you have an image named 'sanemi.jpeg' in the same folder as this script.
-st.sidebar.image("sanemi.jpeg", caption="Sanemi Shinazugawa")
+# --- NEW: Character Selection ---
+st.sidebar.title("Choose Your Guide")
+character_choice = st.sidebar.selectbox(
+    "Who do you want to analyze the clouds with?",
+    ("Tanjiro", "Zenitsu", "Inosuke")
+)
+
+# Dictionary to hold character data
+character_data = {
+    "Tanjiro": {"image": "tanjiro.jpeg", "caption": "Tanjiro Kamado"},
+    "Zenitsu": {"image": "zenitsu.jpeg", "caption": "Zenitsu Agatsuma"},
+    "Inosuke": {"image": "inosuke.jpeg", "caption": "Inosuke Hashibira"}
+}
+
+selected_char_info = character_data[character_choice]
+st.sidebar.image(selected_char_info["image"], caption=selected_char_info["caption"])
 st.sidebar.divider()
 
 
 st.title("☁️ CloudBooth: The Sky’s Image Analyzer")
-st.markdown("Upload a picture of the sky, and we'll identify the clouds and give them clever names.")
+st.markdown(f"Upload a picture of the sky, and **{character_choice}** will help you analyze the clouds!")
 
 # --- File Uploader ---
 uploaded_file = st.file_uploader("Choose a sky picture...", type=["jpg", "jpeg", "png"])
@@ -88,16 +101,12 @@ else:
 
         display_image = frame_bgr.copy()
 
-        # Loop through the detected clouds and draw their outlines and labels
         for x, y, w, h, label, score, contour in cloud_info:
-            # High-contrast drawing colors
-            # Outline color: Dark Blue
             cv2.drawContours(display_image, [contour], -1, (139, 0, 0), 3)
-            # Text color: Pure White with a black outline for visibility
             cv2.putText(display_image, f"{label} ({score} pts)", (x, y - 15),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 0), 5) # Black outline
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 0), 5) 
             cv2.putText(display_image, f"{label} ({score} pts)", (x, y - 15),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2) # White text
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
 
         with col2:
             st.header("Analyzed Image")
@@ -106,6 +115,20 @@ else:
         st.balloons()
         st.success("Analysis Complete!")
 
+        # --- NEW: Dynamic Dialogue Box ---
+        if leaderboard_data:
+            total_score = sum(cloud['score'] for cloud in leaderboard_data)
+            comment = ""
+            if character_choice == "Tanjiro":
+                comment = get_tanjiro_comment(total_score)
+            elif character_choice == "Zenitsu":
+                comment = get_zenitsu_comment(total_score)
+            elif character_choice == "Inosuke":
+                comment = get_inosuke_comment(total_score)
+
+            with st.chat_message("assistant", avatar=selected_char_info["image"]):
+                st.markdown(f"**{character_choice}:** {comment}")
+        
         # --- Sidebar for Cloud Statistics ---
         st.sidebar.header("☁️ Cloud Report")
         if not leaderboard_data:
