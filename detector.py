@@ -1,5 +1,5 @@
 import cv2
-from utils.labels import generate_cloud_label, random_emotion
+from labels import generate_cloud_label, random_emotion
 
 def detect_clouds(frame):
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
