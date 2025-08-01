@@ -1,4 +1,3 @@
-
 import streamlit as st
 import cv2
 import numpy as np
@@ -9,8 +8,61 @@ import os
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from detector import detect_clouds
 
+# --- Custom CSS for the theme ---
+def vibrant_style():
+    css = """
+    <style>
+    /* Main app background */
+    [data-testid="stAppViewContainer"] > .main {
+        background-color: #FFF8DC; /* Light Gold (Cornsilk) background */
+    }
+    /* Sidebar background */
+    [data-testid="stSidebar"] > div:first-child {
+        background-color: #F5DEB3; /* Wheat color for sidebar */
+    }
+    /* Title and headers color */
+    h1, h2, h3 {
+        color: #000000; /* Black for high contrast */
+    }
+    /* Custom font for the title */
+    h1 {
+        font-family: 'Georgia', serif; /* A more classic, sharp font */
+    }
+    /* Text color */
+    .st-emotion-cache-16txtl3, .st-emotion-cache-1629p8f, .st-emotion-cache-1ghh1go {
+        color: #36454F; /* Dark Grey (Charcoal) for readability */
+    }
+    /* Button style */
+    .stButton > button {
+        color: #FFFFFF; /* Pure white text */
+        background-color: #DAA520; /* Goldenrod button color */
+        border-radius: 8px;
+        border: 2px solid #DAA520;
+        padding: 10px 24px;
+        font-weight: bold;
+    }
+    .stButton > button:hover {
+        background-color: #FFFFFF;
+        color: #DAA520;
+        border: 2px solid #DAA520;
+    }
+    </style>
+    """
+    st.markdown(css, unsafe_allow_html=True)
+
+
 # --- Page Configuration ---
 st.set_page_config(page_title="CloudBooth ☁️", layout="wide")
+vibrant_style() # Apply our new style
+
+# --- Welcome section in the sidebar ---
+st.sidebar.title("Welcome, Cloud Slayer!")
+# --- CHANGE: Using a local image file ---
+# Make sure you have an image named 'sanemi.jpeg' in the same folder as this script.
+st.sidebar.image("sanemi.jpeg", caption="Sanemi Shinazugawa")
+st.sidebar.divider()
+
+
 st.title("☁️ CloudBooth: The Sky’s Image Analyzer")
 st.markdown("Upload a picture of the sky, and we'll identify the clouds and give them clever names.")
 
@@ -38,10 +90,14 @@ else:
 
         # Loop through the detected clouds and draw their outlines and labels
         for x, y, w, h, label, score, contour in cloud_info:
-            cv2.drawContours(display_image, [contour], -1, (0, 255, 0), 3)
-            # Display the label and the score on the image
+            # High-contrast drawing colors
+            # Outline color: Dark Blue
+            cv2.drawContours(display_image, [contour], -1, (139, 0, 0), 3)
+            # Text color: Pure White with a black outline for visibility
             cv2.putText(display_image, f"{label} ({score} pts)", (x, y - 15),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 255), 2)
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 0), 5) # Black outline
+            cv2.putText(display_image, f"{label} ({score} pts)", (x, y - 15),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2) # White text
 
         with col2:
             st.header("Analyzed Image")
