@@ -5,84 +5,65 @@ from PIL import Image
 import sys
 import os
 
+# This path modification assumes 'detector.py' is in the same directory.
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from detector import detect_clouds
 # --- CHANGE: Import all character comment functions ---
 from gemini_helper import get_tanjiro_comment, get_zenitsu_comment, get_inosuke_comment
 
-# --- Custom CSS for the theme ---
-def vibrant_style():
-    css = """
+# --- Page Configuration ---
+st.set_page_config(page_title="CloudBooth ☁️", layout="wide")
+
+# --- Custom UI/UX: Sidebar color, Background Image, and Text Colors ---
+st.markdown("""
     <style>
-    /* Main app background */
-    [data-testid="stAppViewContainer"] > .main {
-        background-color: #FFF8DC; /* Light Gold (Cornsilk) background */
-    }
-    /* Sidebar background */
-    [data-testid="stSidebar"] > div:first-child {
-        background-color: #F5DEB3; /* Wheat color for sidebar */
-    }
-    /* Title and headers color */
-    h1, h2, h3 {
-        color: #000000; /* Black for high contrast */
-    }
-    /* Custom font for the title */
-    h1 {
-        font-family: 'Georgia', serif; /* A more classic, sharp font */
-    }
-    /* Text color */
-    .st-emotion-cache-16txtl3, .st-emotion-cache-1629p8f, .st-emotion-cache-1ghh1go {
-        color: #36454F; /* Dark Grey (Charcoal) for readability */
-    }
-    /* Button style */
-    .stButton > button {
-        color: #FFFFFF; /* Pure white text */
-        background-color: #DAA520; /* Goldenrod button color */
-        border-radius: 8px;
-        border: 2px solid #DAA520;
-        padding: 10px 24px;
-        font-weight: bold;
-    }
-    .stButton > button:hover {
-        background-color: #FFFFFF;
-        color: #DAA520;
-        border: 2px solid #DAA520;
-    }
+        /* Set sidebar background and text color */
+        [data-testid="stSidebar"] {
+            background-color: #ADD8E6;
+            color: black;
+        }
+
+        [data-testid="stSidebar"] * {
+            color: black !important;
+        }
+
+        /* Set full-page background image */
+        body {
+            background-image: url('https://images.unsplash.com/photo-1506744038136-46273834b3fb');
+            background-size: cover;
+            background-attachment: fixed;
+            background-repeat: no-repeat;
+        }
+
+        /* Optional: Make main content slightly opaque for readability */
+        .main {
+            background-color: rgba(255, 255, 255, 0.85);
+            padding: 1rem;
+            border-radius: 10px;
+        }
     </style>
-    """
-    st.markdown(css, unsafe_allow_html=True)
+""", unsafe_allow_html=True)
 
 
 # --- Page Configuration ---
 st.set_page_config(page_title="CloudBooth ☁️", layout="wide")
-vibrant_style() 
+vibrant_style() # Apply our new style
 
-# --- NEW: Character Selection ---
-st.sidebar.title("Choose Your Guide")
-character_choice = st.sidebar.selectbox(
-    "Who do you want to analyze the clouds with?",
-    ("Tanjiro", "Zenitsu", "Inosuke")
-)
-
-# Dictionary to hold character data
-character_data = {
-    "Tanjiro": {"image": "tanjiro.jpeg", "caption": "Tanjiro Kamado"},
-    "Zenitsu": {"image": "zenitsu.jpeg", "caption": "Zenitsu Agatsuma"},
-    "Inosuke": {"image": "inosuke.jpeg", "caption": "Inosuke Hashibira"}
-}
-
-selected_char_info = character_data[character_choice]
-st.sidebar.image(selected_char_info["image"], caption=selected_char_info["caption"])
+# --- Welcome section in the sidebar ---
+st.sidebar.title("Welcome, Cloud Slayer!")
+# --- CHANGE: Using a local image file ---
+# Make sure you have an image named 'sanemi.jpeg' in the same folder as this script.
+st.sidebar.image("sanemi.jpeg", caption="Sanemi Shinazugawa")
 st.sidebar.divider()
 
 
 st.title("☁️ CloudBooth: The Sky’s Image Analyzer")
-st.markdown(f"Upload a picture of the sky, and **{character_choice}** will help you analyze the clouds!")
+st.markdown("Upload a picture of the sky, and we'll identify the clouds and give them clever names.")
 
-# --- File Uploader ---
-uploaded_file = st.file_uploader("Choose a sky picture...", type=["jpg", "jpeg", "png"])
+# Upload File
+uploaded_file = st.file_uploader("Upload the picture of the sky...", type=["jpg", "jpeg", "png"])
 
-# --- Main App Logic ---
+
 if uploaded_file is None:
     st.info("Please upload an image file to begin analysis.")
 else:
@@ -92,6 +73,7 @@ else:
         frame_bgr = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
 
         col1, col2 = st.columns(2)
+        # Given Img Header
         with col1:
             st.header("Original Image")
             st.image(pil_image, use_container_width=True)
@@ -102,11 +84,14 @@ else:
         display_image = frame_bgr.copy()
 
         for x, y, w, h, label, score, contour in cloud_info:
+            # High-contrast drawing colors
+            # Outline color: Dark Blue
             cv2.drawContours(display_image, [contour], -1, (139, 0, 0), 3)
+            # Text color: Pure White with a black outline for visibility
             cv2.putText(display_image, f"{label} ({score} pts)", (x, y - 15),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 0), 5) 
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 0), 5) # Black outline
             cv2.putText(display_image, f"{label} ({score} pts)", (x, y - 15),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2) # White text
 
         with col2:
             st.header("Analyzed Image")
@@ -115,20 +100,6 @@ else:
         st.balloons()
         st.success("Analysis Complete!")
 
-        # --- NEW: Dynamic Dialogue Box ---
-        if leaderboard_data:
-            total_score = sum(cloud['score'] for cloud in leaderboard_data)
-            comment = ""
-            if character_choice == "Tanjiro":
-                comment = get_tanjiro_comment(total_score)
-            elif character_choice == "Zenitsu":
-                comment = get_zenitsu_comment(total_score)
-            elif character_choice == "Inosuke":
-                comment = get_inosuke_comment(total_score)
-
-            with st.chat_message("assistant", avatar=selected_char_info["image"]):
-                st.markdown(f"**{character_choice}:** {comment}")
-        
         # --- Sidebar for Cloud Statistics ---
         st.sidebar.header("☁️ Cloud Report")
         if not leaderboard_data:
