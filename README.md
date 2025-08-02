@@ -48,18 +48,33 @@ https://cloudbooth.onrender.com/
 For Software:
 # Screenshots 
 <img width="959" height="471" alt="Login Page" src="https://github.com/user-attachments/assets/e897aae3-2848-4ca4-a808-a2e2f4f1a074" />
+
+
 *Login Page*
 
+
 <img width="959" height="475" alt="Sign UP" src="https://github.com/user-attachments/assets/d7b1dfa4-650d-4e2f-b7ae-2be44d5a95a0" />
+
+
 *Register*
 
+
+
 <img width="959" height="478" alt="image" src="https://github.com/user-attachments/assets/088f9361-5c53-44cf-8fe5-d34d54ea3e32" />
+
+
 *Landing Page*
 
+
 <img width="959" height="472" alt="Analyse" src="https://github.com/user-attachments/assets/9fa4635b-6738-4f03-bf70-b42e56d8de8e" />
+
+
 *Cloud Analysis*
 
+
 <img width="959" height="475" alt="Achivement" src="https://github.com/user-attachments/assets/e2f4c766-36bf-4ebe-8a51-8216166e3253" />
+
+
 *Scoreboard, and Shapes in the clouds*
 
 ## Team Contributions
