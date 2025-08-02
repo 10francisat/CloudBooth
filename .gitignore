@@ -2,3 +2,16 @@ venv/
 ven/
 __pycache__/
 *.pyc
+# Database
+cloudbooth.db
+user_profile.json
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Environment variables
+.env
+
+# Streamlit secrets
+.streamlit/secrets.toml
