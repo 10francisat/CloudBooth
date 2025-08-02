@@ -8,7 +8,7 @@ import cv2
 # Load environment variables from a .env file
 load_dotenv()
 
-# Gemini API Configuration 
+# Gemini API Configuration
 try:
     api_key = st.secrets["GOOGLE_API_KEY"]
 except (FileNotFoundError, KeyError):
@@ -22,28 +22,41 @@ else:
     st.warning("GOOGLE_API_KEY not found. Please set it in your .env file or Streamlit secrets.")
 
 def get_gemini_analysis(cloud_image_np):
-    
-    #Uses the Gemini Vision model to analyze an image of a cloud.
-    
+    """
+    First, verifies if the image contains a cloud. If it does, it gives it a creative name.
+    If not, it returns a special keyword.
+    """
     if model is None:
-        return "[Gemini API key not configured]"
+        return "NO_CLOUD"
 
     pil_image = Image.fromarray(cv2.cvtColor(cloud_image_np, cv2.COLOR_BGR2RGB))
 
-    # Gemini PROMPT
-
+    # New prompt to first validate if the object is a cloud
     prompt = """
-    You are a creative and imaginative cloud spotter, an expert in pareidolia.
-    Look closely at the provided image of a single cloud.
-    Describe what you *really* see in its shape. Does it look like an animal, an object, a face, or something else?
-    Be descriptive and imaginative. Give it a creative name based on what you see.
-    
-    Respond with the name only. For example: "A Dragon Taking Flight", "A Sleeping Cat", "A Leaky Teapot".
-    Just return the name. No quotes, no explanation.
+    Analyze the image.
+    1. Is the main object in this image a cloud? Answer with "Yes" or "No".
+    2. If the answer is "Yes", on a new line, provide a creative and imaginative name for the cloud's shape (e.g., "A Dragon Taking Flight").
+
+    If it is not a cloud, just respond with "No".
     """
     try:
         response = model.generate_content([prompt, pil_image])
-        return response.text.strip()
+        text_response = response.text.strip()
+
+        # Check if the model responded that it's not a cloud
+        if text_response.lower().startswith("no"):
+            return "NO_CLOUD"
+
+        # If it is a cloud, extract the name from the second line
+        lines = text_response.split('\n')
+        if len(lines) > 1 and lines[0].lower().startswith("yes"):
+            return lines[1].strip()
+        # Fallback if the model doesn't follow the multi-line instruction perfectly
+        elif not text_response.lower().startswith("yes"):
+            return text_response
+        else:
+            return "Unusual Cloud Shape"
+
     except Exception as e:
         print(f"Gemini API error: {e}")
         return "[Gemini error]"

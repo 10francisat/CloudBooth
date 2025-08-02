@@ -3,4 +3,4 @@ opencv-python
 numpy
 python-dotenv
 google-generativeai
-
+bcrypt
