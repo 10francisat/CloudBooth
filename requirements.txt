@@ -4,3 +4,5 @@ numpy
 python-dotenv
 google-generativeai
 bcrypt
+sqlite3
+
